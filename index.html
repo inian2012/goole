@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账号全自动解析助手</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --success: #10b981;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text-dark: #111827;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --radius: 14px;
+        }
+
+        body {
+            font-family: 'Inter', 'PingFang SC', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 30px 15px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* 顶部区域 */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h2 { font-size: 26px; font-weight: 800; color: var(--primary); margin: 0; }
+
+        /* 卡片基础样式 */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+            border: 1px solid var(--border);
+        }
+
+        /* 输入区 */
+        textarea {
+            width: 100%;
+            height: 100px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+            background: #fafafa;
+            resize: none;
+        }
+        textarea:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+
+        /* 表格美化 */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th { background: #f9fafb; padding: 14px; text-align: left; font-size: 12px; color: var(--text-muted); border-bottom: 2px solid var(--border); }
+        td { padding: 16px 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        
+        .acc-info { line-height: 1.4; }
+        .acc-info b { color: var(--primary); font-size: 15px; display: block; margin-bottom: 2px; }
+        .acc-info span { font-size: 12px; color: var(--text-muted); }
+        .mono { font-family: 'Consolas', monospace; color: #374151; font-weight: 500; }
+
+        /* 按钮组优化 */
+        .btn-group { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 180px;
+        }
+        .btn-2fa { background: var(--success); color: white; }
+        .btn-2fa:hover { background: #059669; transform: scale(1.02); }
+        .btn-login { background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db; }
+        .btn-login:hover { background: #e5e7eb; color: var(--primary); }
+        
+        .btn-sub-text { font-size: 11px; color: #9ca3af; margin-top: 2px; font-weight: normal; }
+
+        /* 教程区域 */
+        .tutorial-card { background: #eef2ff; border: 1px solid #c7d2fe; }
+        .tutorial-card h3 { margin-top: 0; color: #4338ca; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+        .step-list { list-style: none; padding: 0; margin: 0; }
+        .step-list li { margin-bottom: 12px; display: flex; gap: 10px; font-size: 14px; color: #374151; }
+        .step-num { 
+            background: #4338ca; color: white; width: 22px; height: 22px; 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            font-size: 12px; flex-shrink: 0; margin-top: 2px;
+        }
+
+        .tag { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>账号自动解析助手</h2>
+    </div>
+
+    <div class="card">
+        <textarea id="rawInput" placeholder="在此粘贴发货内容... (例如: 邮箱|密码|辅助邮箱|2FA|地区)"></textarea>
+    </div>
+
+    <div class="card table-container" id="resultCard" style="display:none;">
+        <table>
+            <thead>
+                <tr>
+                    <th width="30%">账号信息</th>
+                    <th width="20%">辅助邮箱</th>
+                    <th width="15%">地区</th>
+                    <th width="35%">操作中心 (点我执行)</th>
+                </tr>
+            </thead>
+            <tbody id="resultBody"></tbody>
+        </table>
+    </div>
+
+    <div class="card tutorial-card">
+        <h3>使用教程指南</h3>
+        <ul class="step-list">
+            <li><span class="step-num">1</span> <span>直接在上方框内<b>粘贴发货的内容</b>，系统会自动实时解析出所有关键数据。</span></li>
+            <li><span class="step-num">2</span> <span>解析完成后，点击表格中的蓝色按钮 <b>[Google登录]</b>，在弹出的窗口输入显示的账号与密码。</span></li>
+            <li><span class="step-num">3</span> <span>若登录提示需要验证码，返回此页面点击绿色按钮 <b>[获取Authenticator验证码]</b> 即可。</span></li>
+            <li><span class="step-num">4</span> <span><b>安全提醒：</b>请按照教程当天更改验证器，更改时所需的验证码同样点击绿色按钮获取。</span></li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    const inputArea = document.getElementById('rawInput');
+    const resultBody = document.getElementById('resultBody');
+    const resultCard = document.getElementById('resultCard');
+
+    inputArea.addEventListener('input', function() {
+        const text = this.value.trim();
+        resultBody.innerHTML = ''; 
+
+        if (!text) {
+            resultCard.style.display = 'none';
+            return;
+        }
+
+        resultCard.style.display = 'block';
+        const lines = text.split('\n');
+
+        lines.forEach(line => {
+            if (!line.trim()) return;
+            const p = line.split('|').map(item => item.trim());
+
+            const acc = {
+                email: p[0] || '-',
+                pass: p[1] || '-',
+                recovery: p[2] || '-',
+                twoFA: p[3] || '',
+                loc: p[4] || '-'
+            };
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <div class="acc-info">
+                        <b>${acc.email}</b>
+                        <span>密码：<span class="mono">${acc.pass}</span></span>
+                    </div>
+                </td>
+                <td class="mono" style="font-size:12px; color:#666">${acc.recovery}</td>
+                <td><span class="tag">${acc.loc}</span></td>
+                <td>
+                    <div class="btn-group">
+                        <a href="https://accounts.google.com/AccountChooser" target="_blank" class="btn btn-login">
+                            <div>Google登录<div class="btn-sub-text">点我登录账号</div></div>
+                        </a>
+                        ${acc.twoFA ? 
+                            `<a href="https://2fa.fb.tools/${acc.twoFA}" target="_blank" class="btn btn-2fa">
+                                <div>获取Authenticator验证码<div class="btn-sub-text">点我获取6位数字</div></div>
+                            </a>` : ''}
+                    </div>
+                </td>
+            `;
+            resultBody.appendChild(tr);
+        });
+    });
+</script>
+
+</body>
+</html>
