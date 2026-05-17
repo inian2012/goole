@@ -390,13 +390,14 @@
         const safeLabel = escapeHtml(label);
         const valueClass = options.mono ? 'copy-value mono' : 'copy-value';
         const extraClass = options.extraClass || '';
+        const tip = options.hideTip ? '' : '<span class="copy-tip">轻点复制</span>';
         return `
             <button class="copy-field ${extraClass}" type="button" data-copy="${safeValue}" data-label="${safeLabel}" title="${safeValue}">
                 <span class="copy-main">
                     <span class="copy-label">${safeLabel}</span>
                     <span class="${valueClass}">${safeValue}</span>
                 </span>
-                <span class="copy-tip">轻点复制</span>
+                ${tip}
             </button>
         `;
     }
@@ -459,8 +460,8 @@
                         ${copyField(acc.pass, '密码', { mono: true })}
                     </div>
                 </td>
-                <td>${copyField(acc.recovery, '辅助邮箱', { mono: true, extraClass: 'copy-field-compact' })}</td>
-                <td>${copyField(acc.loc, '地区/年份', { extraClass: 'copy-field-compact copy-field-location' })}</td>
+                <td>${copyField(acc.recovery, '辅助邮箱', { mono: true, hideTip: true, extraClass: 'copy-field-compact' })}</td>
+                <td>${copyField(acc.loc, '地区/年份', { hideTip: true, extraClass: 'copy-field-compact copy-field-location' })}</td>
                 <td>
                     <div class="btn-group">
                         <a href="https://accounts.google.com/AccountChooser" target="_blank" class="btn btn-login">
