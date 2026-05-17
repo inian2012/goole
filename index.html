@@ -31,13 +31,19 @@
             margin: 0 auto;
         }
 
+        .top-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
         /* 福利售后群公告条 */
         .group-notice {
             background: linear-gradient(90deg, #4f46e5, #818cf8);
             color: white;
             padding: 10px 20px;
             border-radius: 8px;
-            margin-bottom: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -45,6 +51,7 @@
             font-weight: 600;
             box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
             font-size: 14px;
+            flex: 1;
         }
         .group-notice span { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 5px; cursor: pointer; }
 
@@ -133,6 +140,76 @@
         .acc-info b { color: var(--primary); font-size: 15px; display: block; margin-bottom: 2px; }
         .acc-info span { font-size: 12px; color: var(--text-muted); }
         .mono { font-family: 'Consolas', monospace; color: #374151; font-weight: 500; }
+        .copy-stack { display: grid; gap: 8px; }
+        .copy-field {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e4e7ec;
+            border-radius: 10px;
+            background: #fafbff;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        .copy-field:hover {
+            border-color: #c7d2fe;
+            background: #eef2ff;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
+        }
+        .copy-field-primary {
+            border-color: #dbe2ff;
+            background: #f5f7ff;
+        }
+        .copy-main {
+            min-width: 0;
+            flex: 1;
+        }
+        .copy-label {
+            display: block;
+            margin-bottom: 2px;
+            color: #6b7280;
+            font-size: 11px;
+        }
+        .copy-value {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #111827;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .copy-field-primary .copy-value {
+            color: var(--primary);
+            font-size: 14px;
+        }
+        .copy-field-compact {
+            min-width: 0;
+            padding: 9px 10px;
+            background: #fbfcff;
+        }
+        .copy-field-compact .copy-value {
+            max-width: 180px;
+        }
+        .copy-field-location {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+        .copy-field-location .copy-value {
+            color: #166534;
+        }
+        .copy-tip {
+            flex-shrink: 0;
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .copy-cell { cursor: pointer; transition: color 0.2s; }
+        .copy-cell:hover { color: var(--primary) !important; }
 
         /* 按钮组优化 */
         .btn-group { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
@@ -171,13 +248,42 @@
         .tag { background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
         .warning-text { color: #dc2626; font-weight: bold; }
         .group-text { color: #4f46e5; font-weight: bold; }
+        .copy-toast {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
+            background: rgba(17, 24, 39, 0.92);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 8px 24px rgba(17, 24, 39, 0.18);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s, transform 0.2s;
+            z-index: 30;
+        }
+        .copy-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-4px);
+        }
+        @media (max-width: 720px) {
+            .top-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="group-notice">
-        🚀 福利售后QQ群：108759405 <span>点击复制群号</span>
+    <div class="top-row">
+        <div class="group-notice">
+            🚀 福利售后QQ群：108759405 <span>点击复制群号</span>
+        </div>
     </div>
 
     <div class="header">
@@ -235,16 +341,69 @@
     </div>
 </div>
 
+<div class="copy-toast" id="copyToast"></div>
+
 <script>
     const inputArea = document.getElementById('rawInput');
     const resultBody = document.getElementById('resultBody');
     const resultCard = document.getElementById('resultCard');
     const formatRadios = document.querySelectorAll('input[name="accFormat"]');
+    const copyToast = document.getElementById('copyToast');
+    let toastTimer = null;
+
+    function showCopyToast(text) {
+        copyToast.textContent = text;
+        copyToast.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            copyToast.classList.remove('show');
+        }, 1800);
+    }
+
+    async function copyText(text, label) {
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch (error) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            textarea.remove();
+        }
+        showCopyToast(`${label}已复制`);
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function copyField(value, label, options = {}) {
+        const safeValue = escapeHtml(value || '-');
+        const safeLabel = escapeHtml(label);
+        const valueClass = options.mono ? 'copy-value mono' : 'copy-value';
+        const extraClass = options.extraClass || '';
+        return `
+            <button class="copy-field ${extraClass}" type="button" data-copy="${safeValue}" data-label="${safeLabel}" title="${safeValue}">
+                <span class="copy-main">
+                    <span class="copy-label">${safeLabel}</span>
+                    <span class="${valueClass}">${safeValue}</span>
+                </span>
+                <span class="copy-tip">轻点复制</span>
+            </button>
+        `;
+    }
 
     // 复制群号功能
     document.querySelector('.group-notice span').addEventListener('click', () => {
-        navigator.clipboard.writeText('108759405');
-        alert('群号 108759405 已复制到剪贴板！');
+        copyText('108759405', '群号');
     });
 
     // 当切换格式时，如果输入框有内容，自动重新解析
@@ -295,13 +454,13 @@
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>
-                    <div class="acc-info">
-                        <b>${acc.email}</b>
-                        <span>密码：<span class="mono">${acc.pass}</span></span>
+                    <div class="copy-stack">
+                        ${copyField(acc.email, '账号', { extraClass: 'copy-field-primary' })}
+                        ${copyField(acc.pass, '密码', { mono: true })}
                     </div>
                 </td>
-                <td class="mono" style="font-size:12px; color:#666">${acc.recovery}</td>
-                <td><span class="tag">${acc.loc}</span></td>
+                <td>${copyField(acc.recovery, '辅助邮箱', { mono: true, extraClass: 'copy-field-compact' })}</td>
+                <td>${copyField(acc.loc, '地区/年份', { extraClass: 'copy-field-compact copy-field-location' })}</td>
                 <td>
                     <div class="btn-group">
                         <a href="https://accounts.google.com/AccountChooser" target="_blank" class="btn btn-login">
@@ -316,6 +475,12 @@
             `;
             resultBody.appendChild(tr);
         });
+    });
+
+    resultBody.addEventListener('click', (event) => {
+        const target = event.target.closest('[data-copy]');
+        if (!target) return;
+        copyText(target.getAttribute('data-copy') || '', target.getAttribute('data-label') || '内容');
     });
 </script>
 
